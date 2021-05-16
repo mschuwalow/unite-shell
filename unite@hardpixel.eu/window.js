@@ -242,6 +242,10 @@ var MetaWindow = GObject.registerClass(
       return this._parseEnumSetting('hide-window-titlebars')
     }
 
+    get windowButtonsPosition() {
+      return this.settings.get('window-buttons-position')
+    }
+
     minimize() {
       if (this.minimized) {
         this.win.unminimize()
@@ -294,8 +298,11 @@ var MetaWindow = GObject.registerClass(
     syncDecorations() {
       if (this.hideTitlebars) {
         this.decorations.hide()
+        const path = `@/buttons-${this.windowButtonsPosition}/always.css`
+        this.styles.addGtkStyle('windowDecorations', path)
       } else {
         this.decorations.show()
+        this.styles.deleteStyle('windowDecorations')
       }
     }
 
@@ -382,14 +389,6 @@ var WindowManager = GObject.registerClass(
         global.display, 'window-demands-attention', this._onAttention.bind(this)
       )
 
-      this.settings.connect(
-        'hide-window-titlebars', this._onStylesChange.bind(this)
-      )
-
-      this.settings.connect(
-        'button-layout', this._onStylesChange.bind(this)
-      )
-
       Override.inject(this, 'window', 'WindowManager')
     }
 
@@ -463,17 +462,6 @@ var WindowManager = GObject.registerClass(
       auto && Main.activateWindow(win, time)
     }
 
-    _onStylesChange() {
-      if (this.hideTitlebars != 'never') {
-        const side = this.settings.get('window-buttons-position')
-        const path = `@/buttons-${side}/${this.hideTitlebars}.css`
-
-        this.styles.addGtkStyle('windowDecorations', path)
-      } else {
-        this.styles.deleteStyle('windowDecorations')
-      }
-    }
-
     activate() {
       GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
         const actors = global.get_window_actors()
@@ -481,8 +469,6 @@ var WindowManager = GObject.registerClass(
 
         return GLib.SOURCE_REMOVE
       })
-
-      this._onStylesChange()
     }
 
     destroy() {
